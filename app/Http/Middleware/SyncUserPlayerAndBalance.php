@@ -1,0 +1,101 @@
+<?php
+namespace App\Http\Middleware;
+
+use App\Http\Controllers\ApiTransactionService;
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
+
+class SyncUserPlayerAndBalance
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     */
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        if (Auth::check()) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+
+            if ($user->player_token === null) {
+                $this->createPlayerToken($user);
+            }
+
+            if ($user->is_playing) {
+                $this->updateUserBalance($user);
+                $user->is_playing = false;
+                $user->save();
+            }
+        }
+
+        return $next($request);
+    }
+
+    private function createPlayerToken($user)
+    {
+        // Gunakan ID full biar unik
+        $playerToken = $user->username;
+
+        try {
+            $result = ApiTransactionService::createUser($playerToken);
+
+            if (($result['success'] ?? false) || ($result['message'] ?? '') === "The user code is duplicated.") {
+                $user->player_token = $playerToken;
+                $user->save();
+                return true;
+            }
+
+            Log::warning("API createUser gagal (tapi tidak lempar exception)", [
+                'user_id'      => $user->id,
+                'player_token' => $playerToken,
+                'response'     => $result,
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::warning("Create user API failed", [
+                'user_id'      => $user->id,
+                'player_token' => $playerToken,
+                'error'        => $e->getMessage(),
+            ]);
+        }
+
+        Log::error("Gagal membuat player_token", [
+            'user_id'      => $user->id,
+            'player_token' => $playerToken,
+        ]);
+
+        return false;
+    }
+
+    private function updateUserBalance($user)
+    {
+        try {
+            $getBalance = ApiTransactionService::getBalance($user->player_token);
+            Log::warning('Gagal mengambil saldo user dari API', [
+                'response' => $getBalance,
+            ]);
+
+            if (isset($getBalance['success']) && $getBalance['success']) {
+                $userBalance = $getBalance['data']['user_list'][0]['user_balance'] ?? 0;
+
+                $user->active_balance = $userBalance;
+                $user->save();
+            } else {
+                Log::warning('Gagal mengambil saldo user dari API', [
+                    'player_token' => $user->player_token,
+                    'response'     => $getBalance,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('API error saat ambil saldo user', [
+                'player_token' => $user->player_token,
+                'error'        => $e->getMessage(),
+            ]);
+        }
+    }
+}

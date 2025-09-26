@@ -1,0 +1,15 @@
+/vendor
+/node_modules
+/public/storage
+/storage/*.key
+.env
+.env.*
+!.env.example
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+.idea
+.phpunit.result.cache
+.phpstorm.meta.php
+.DS_Store
