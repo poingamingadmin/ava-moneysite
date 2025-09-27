@@ -10,7 +10,6 @@ use App\Http\Middleware\RedirectAuthenticated;
 use App\Http\Middleware\SyncUserPlayerAndBalance;
 use Illuminate\Support\Facades\Route;
 
-
 Route::post('/payment/callback', [PaymentGatewayController::class, "handleCallback"])->name('payment.callback');
 Route::middleware([CheckFrontendMaintenance::class, SyncUserPlayerAndBalance::class])->group(function () {
     Route::get('/', [ViewController::class, 'home'])->name('index');
@@ -40,7 +39,6 @@ Route::middleware([CheckFrontendMaintenance::class, SyncUserPlayerAndBalance::cl
     Route::post('check_register_captcha', [ValidationController::class, 'check_register_captcha']);
     Route::post('/register', [AuthController::class, 'register'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
-
 
     Route::middleware([RedirectAuthenticated::class, 'auth.session'])->group(function () {
         Route::get('/register-success', [ViewController::class, 'registerSuccess']);
@@ -80,7 +78,9 @@ Route::middleware([CheckFrontendMaintenance::class, SyncUserPlayerAndBalance::cl
         Route::post('chg-pass', [AuthController::class, 'chg_pass'])->name('chgpass.store');
         Route::get('/getBal', [AuthController::class, 'getBal']);
         Route::get('/subGameLaunch', [GameLaunchController::class, 'subLaunchGames']);
-        Route::get('/{categoryLive}/{providerLive}', [GameLaunchController::class, 'subLaunchGamesLive'])->where('categoryLive', 'live|sports|casino|lottery|poker|e-games');
+        Route::get('/sports/{providerLive}', [GameLaunchController::class, 'subLaunchGamesLive']);
+        Route::get('/casino/{providerLive}', [GameLaunchController::class, 'subLaunchGamesLive']);
+        Route::get('/cockfight/{providerLive}', [GameLaunchController::class, 'subLaunchGamesLive']);
     });
     Route::fallback(fn() => redirect('/'));
 });

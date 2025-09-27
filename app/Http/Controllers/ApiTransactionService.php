@@ -118,7 +118,7 @@ class ApiTransactionService extends Controller
         string $userCode,
         string $providerCode,
         string $gameCode,
-        string $lang = 'id',
+        string $lang = 'en',
     ): array {
         $endpoint = '/user/games/start';
 
@@ -128,6 +128,7 @@ class ApiTransactionService extends Controller
             'provider_code' => $providerCode,
             'game_code'     => $gameCode,
             'lang'          => $lang,
+            'platform'      => user_agent(),
         ];
 
         return self::formatResponse(

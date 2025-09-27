@@ -38,7 +38,6 @@ class SyncUserPlayerAndBalance
 
     private function createPlayerToken($user)
     {
-        // Gunakan ID full biar unik
         $playerToken = $user->username;
 
         try {
@@ -76,26 +75,32 @@ class SyncUserPlayerAndBalance
     {
         try {
             $getBalance = ApiTransactionService::getBalance($user->player_token);
-            Log::warning('Gagal mengambil saldo user dari API', [
+
+            Log::info('Response getBalance', [
                 'response' => $getBalance,
             ]);
 
             if (isset($getBalance['success']) && $getBalance['success']) {
-                $userBalance = $getBalance['data']['user_list'][0]['user_balance'] ?? 0;
-
+                $userBalance = $getBalance['data']['balance'] ?? 0;
                 $user->active_balance = $userBalance;
                 $user->save();
+
+                Log::info('✅ Saldo user berhasil diperbarui', [
+                    'user_code'      => $user->player_token,
+                    'active_balance' => $userBalance,
+                ]);
             } else {
-                Log::warning('Gagal mengambil saldo user dari API', [
+                Log::warning('⚠️ Gagal mengambil saldo user dari API', [
                     'player_token' => $user->player_token,
                     'response'     => $getBalance,
                 ]);
             }
         } catch (\Throwable $e) {
-            Log::error('API error saat ambil saldo user', [
+            Log::error('❌ API error saat ambil saldo user', [
                 'player_token' => $user->player_token,
                 'error'        => $e->getMessage(),
             ]);
         }
     }
+
 }
